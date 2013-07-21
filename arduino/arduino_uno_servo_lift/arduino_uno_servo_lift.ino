@@ -18,28 +18,10 @@ void setup()
 
 void loop() {
 
-// on this servo 1500 is stopped, above 1500 is clockwise, below is counter clockwise
-//      myservo.writeMicroseconds(1500); 
-//      for (int i=1500; i < 2000; i++)
-//      {
-//        myservo.writeMicroseconds(i);
-//        delay(50);`
-//      }
-//      
-//      while(1)
-//      {
-//              myservo.writeMicroseconds(2000);
-//      }    
-
-//           myservo.write(0);  
-//          delay(5000);
-//           myservo.write(90);  
-//          delay(5000);        
-
-
       if (digitalRead(sensePin))
       {
-        myservo.writeMicroseconds(2000);
+        //change from 2000->1000
+        myservo.writeMicroseconds(1750);
         delay(500);
         myservo.writeMicroseconds(1500);
         delay(5000);
