@@ -1,0 +1,192 @@
+<html><head>
+<title>3D Scan</title>
+
+<script src="js/CanvasMatrix.js" type="text/javascript"></script>
+<script src="js/Controls.js" type="text/javascript"></script>
+
+<script id="shader-vs" type="x-shader/x-vertex"> 
+  attribute vec3 aPos; // Normals = Pos
+  uniform mat4 mvMatrix;
+  uniform mat4 prMatrix;
+  uniform vec3 color;
+  uniform float scale;
+  varying vec3 col;
+  const vec4 dirDif = vec4(0., 0., 1., 0.);
+  const vec4 dirHalf = vec4(-.4034, .259, .8776, 0.);
+void main(void) {
+   gl_Position = prMatrix * mvMatrix * vec4(scale * aPos, 1.);
+   vec4 rotNorm = mvMatrix * vec4(aPos, .0);
+   float i = max( 0., dot(rotNorm, dirDif) );
+   col = i * color;
+   i = pow( max( 0., dot(rotNorm, dirHalf) ), 30.);
+   col += vec3(i, i, i);
+}
+</script> 
+ 
+<script id="shader-fs" type="x-shader/x-fragment"> 
+#ifdef GL_ES
+precision highp float;
+#endif
+  varying vec3 col;
+void main(void) {
+   gl_FragColor = vec4(col, 1.);
+}
+</script> 
+
+<script id="line-vs" type="x-shader/x-vertex"> 
+  attribute vec3 aPos;
+  uniform mat4 mvMatrix;
+  uniform mat4 prMatrix;
+void main(void) {
+   gl_Position = prMatrix * mvMatrix * vec4( aPos, 1.);
+}
+</script> 
+ 
+<script id="line-fs" type="x-shader/x-fragment"> 
+#ifdef GL_ES
+precision highp float;
+#endif
+void main(void) {
+   gl_FragColor = vec4( 1.);
+}
+</script> 
+
+
+<script type="text/javascript"> 
+
+var prog, line_prog, bonds = true, mvMatLine, posLoc, lineLoc,
+    mvMatLoc, colorLoc, scaleLoc, nn, nTheta;
+var mvMatrix = new CanvasMatrix4();
+var rotMat = new CanvasMatrix4();
+function webGLStart() {
+   initGL();
+   var size = Math.min(window.innerWidth, window.innerHeight) - 10;
+   canvas.width =  size;   canvas.height = size;
+   gl.viewport(0, 0, size, size);
+
+   prog  = gl.createProgram();
+   gl.attachShader(prog, getShader( gl, "shader-vs" ));
+   gl.attachShader(prog, getShader( gl, "shader-fs" ));
+   posLoc = 0;
+   gl.bindAttribLocation(prog, posLoc, "aPos");
+   gl.linkProgram(prog);
+   line_prog  = gl.createProgram();
+   gl.attachShader(line_prog, getShader( gl, "line-vs" ));
+   gl.attachShader(line_prog, getShader( gl, "line-fs" ));
+   lineLoc = 1;
+   gl.bindAttribLocation(line_prog, lineLoc, "aPos");
+   gl.linkProgram(line_prog);
+
+   var vertices = [], ind = [];
+   nTheta = 25;
+   var nPhi = 50, dPhi = 2*Math.PI/nPhi, dTheta = Math.PI/nTheta;
+   nn = 6*nPhi*nTheta;
+   for (var j = 0; j <= nTheta; j++ ){
+      var Theta    = j * dTheta;
+      var cosTheta = Math.cos ( Theta );
+      var sinTheta = Math.sin ( Theta );
+      for (var i = 0; i <= nPhi; i++ ){
+         var Phi    = i * dPhi;
+         var cosPhi = Math.cos ( Phi );
+         var sinPhi = Math.sin ( Phi );
+         vertices.push( cosPhi * sinTheta );
+         vertices.push( -sinPhi * sinTheta );
+         vertices.push( cosTheta );
+      }
+   }
+   var n1 = nPhi + 1;
+   for ( i = 0; i < nTheta; i++ )
+     for ( j = 0; j < nPhi; j++ ){
+       ind.push (i*n1+j); ind.push ((i+1)*n1+j+1); ind.push (i*n1+j+1);
+       ind.push (i*n1+j); ind.push ((i+1)*n1+j); ind.push ((i+1)*n1+j+1);
+     }
+   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+   gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+
+   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ind),
+     gl.STATIC_DRAW);
+
+   var lines = [];
+   for (var i = -1; i < 2; i++ )
+      for (var j = -1; j < 2; j++ ){
+         lines.push( i, j, -1.5 );  lines.push( i, j, 1.5 );
+      }
+   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array( lines ),gl.STATIC_DRAW);
+   gl.vertexAttribPointer(lineLoc, 3, gl.FLOAT, false, 0, 0);
+   gl.enableVertexAttribArray( posLoc );
+   gl.enableVertexAttribArray( lineLoc );
+
+   rotMat.makeIdentity();
+   mvMatLoc = gl.getUniformLocation(prog,"mvMatrix");
+   colorLoc = gl.getUniformLocation(prog,"color");
+   scaleLoc = gl.getUniformLocation(prog,"scale");
+   var prMatrix = new CanvasMatrix4();
+   mvMatLine = gl.getUniformLocation(line_prog,"mvMatrix");
+   prMatrix.perspective(45, 1, .1, 100);
+   gl.useProgram(prog);
+   gl.uniformMatrix4fv( gl.getUniformLocation(prog,"prMatrix"),
+      false, new Float32Array(prMatrix.getAsArray()) );
+   gl.useProgram(line_prog);
+   gl.uniformMatrix4fv( gl.getUniformLocation(line_prog,"prMatrix"),
+      false, new Float32Array(prMatrix.getAsArray()) );
+
+   gl.enable(gl.DEPTH_TEST);
+   gl.depthFunc(gl.LEQUAL);
+   gl.clearDepth(1.0);
+   gl.clearColor(0, 0, .8, 1);
+   gl.lineWidth(2);
+   transl = -6;
+   drawScene();
+
+  canvas.resize = function (){
+    var size = Math.min(window.innerWidth, window.innerHeight) - 10;
+    canvas.width =  size;   canvas.height = size;
+    gl.viewport(0, 0, size, size);
+    drawScene();
+  }
+}
+  function drawScene(){
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    rotMat.rotate(xRot/3, 1,0,0);  rotMat.rotate(yRot/3, 0,1,0);
+    rotMat.rotate(zRot, 0,0,1);
+    yRot = xRot = zRot = 0;
+    gl.useProgram(prog);
+
+
+	{% for point in model %}
+		drawBall( {{ point[0] }}, {{ point[1] }}, {{ point[2] }}, {{ point[2] }}, 0, 0, .1);
+	{% endfor %}
+
+    if (bonds){
+      gl.useProgram(line_prog);
+      mvMatrix.load( rotMat );
+      mvMatrix.translate(0, 0, transl);
+      gl.uniformMatrix4fv( mvMatLine, false, new Float32Array(mvMatrix.getAsArray()) );
+      gl.drawArrays(gl.LINES, 0, 54);
+    }
+    gl.flush ();
+  }
+
+  function drawBall(x,y,z, r,g,b, scale){
+    mvMatrix.makeIdentity();
+    mvMatrix.translate(x, y, z);
+    mvMatrix.multRight( rotMat );
+    mvMatrix.translate(0, 0, transl);
+    gl.uniformMatrix4fv( mvMatLoc, false, new Float32Array(mvMatrix.getAsArray()) );
+    gl.uniform1f( scaleLoc, scale );
+    gl.uniform3f( colorLoc, r, g, b );
+
+    gl.drawElements(gl.TRIANGLES, nn, gl.UNSIGNED_SHORT, 0);
+  }
+function setBonds(v) {
+   bonds = v;
+   drawScene();
+}
+</script> 
+</head>
+<body onload="webGLStart();" onresize="canvas.resize();"> 
+   <canvas id="canvas" width="266" height="266"></canvas> 
+</body></html>

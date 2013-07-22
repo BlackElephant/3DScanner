@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Black Elephant | A 3D Scanner For Everyone</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="css/reset.css" type="text/css" media="all">
+  <link rel="stylesheet" href="css/layout.css" type="text/css" media="all">
+  <link rel="stylesheet" href="css/style.css" type="text/css" media="all">
+  <script type="text/javascript" src="js/jquery-1.5.2.js" ></script>
+  <script type="text/javascript" src="js/cufon-yui.js"></script>
+  <script type="text/javascript" src="js/cufon-replace.js"></script>  
+  		<script type="text/javascript" src="js/Amaranth_400.font.js"></script>
+  <script type="text/javascript" src="js/script.js"></script>  
+  <script type="text/javascript" src="js/scroll.js"></script>  
+  <script type="text/javascript" src="js/atooltip.jquery.js"></script>
+</head>
+
+<body
+<div class="extra">
+	<br><br>
+	<div id="page_1">
+		<div class="main">
+			<!--header -->
+			<header>
+				<h2 style="margin-left: 180px; font-size: 500%;"><big>Black Elephant</big></h2>
+				<h2 style="margin-left: 280px; font-size: 175%;">A 3D Scanner For Everyone</h2>
+				<nav>
+					<ul id="menu">
+						<li class="nav1"><a href="#page_2">.........</a></li>
+						<li class="nav2"><a href="#page_3">..Make..</a></li>
+						<li class="nav3"><a href="#page_4">..With..</a></li>
+						<li class="nav4"><a href="#page_5">..Moto..</a></li>
+						<li class="nav5"><a href="#page_6">.........</a></li>
+					</ul>
+				</nav>
+
+			</header>
+			<!--header end-->
+			<div class="ic">More Website Templates at TemplateMonster.com!</div>
+		</div>
+		<div class="block"></div>
+	</div>
+</div>
+	
+<div class="extra">
+	<div id="page_4">
+		<div class="main">
+			<section class="content">
+				<article class="col1">
+					{% for model in content %}
+						<div class="wrapper pad_top1 pad_bot2">
+							<p class="pad_bot1"><strong class="font1">{{ model.date }}</strong></p>
+							<p class="pad_bot3">Click to download the 3D points</p>
+							<a href="/model={{ model.id }}" class="button">Download</a>
+							<a href="/view={{ model.id }}" class="button">View</a>
+						</div>
+					{% endfor %}
+        		</article>
+			</section>
+			<!--content end-->
+		</div>
+		<div class="block"></div>
+	</div>
+</div>
+</div>
+<script type="text/javascript"> Cufon.now(); </script>
+</body>
+</html>
